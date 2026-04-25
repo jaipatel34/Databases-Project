@@ -1,7 +1,7 @@
 DB_CONFIG = {
-    "username": "demo",
-    "password": "",
-    "port": 3306,
+    "username": "root",
+    "password": "root",
+    "port": 3307,
     "host": "localhost",
     "database": "tpcds_rental",
 }
