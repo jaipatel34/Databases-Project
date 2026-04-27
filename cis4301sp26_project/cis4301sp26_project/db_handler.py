@@ -7,10 +7,8 @@ from models.Rental import Rental
 from models.Customer import Customer
 from datetime import date, timedelta
 
-
 conn = connect(user=DB_CONFIG["username"], password=DB_CONFIG["password"], host=DB_CONFIG["host"],
                database=DB_CONFIG["database"], port=DB_CONFIG["port"])
-
 
 cur = conn.cursor()
 
@@ -39,39 +37,84 @@ def edit_customer(original_customer_id: str = None, new_customer: Customer = Non
     raise NotImplementedError("you must implement this function")
 
 
+"""
+item_id - A string containing the Item ID for the item being rented.
+customer_id - A string containing the customer id of the customer renting the item.
+"""
 def rent_item(item_id: str = None, customer_id: str = None):
-    """
-    item_id - A string containing the Item ID for the item being rented.
-    customer_id - A string containing the customer id of the customer renting the item.
-    """
-    raise NotImplementedError("you must implement this function")
+    todaysDate = date.today()
+
+    # timedelta Reference https://docs.python.org/3/library/datetime.html
+    dateDue = todaysDate + timedelta(days=14)
+
+    # Insert Entry Into Rental
+    cur.execute("INSERT INTO rental (item_id, customer_id, rental_date, due_date) "
+                "VALUES (?, ?, ?, ?)", (item_id, customer_id, todaysDate, dateDue))
 
 
+"""
+Returns the customer's new place in line.
+"""
 def waitlist_customer(item_id: str = None, customer_id: str = None) -> int:
-    """
-    Returns the customer's new place in line.
-    """
-    raise NotImplementedError("you must implement this function")
+    # Puts The Customer At Their Place In Line
+    updatedSpot = line_length(item_id) + 1
+    cur.execute("INSERT INTO waitlist (item_id, customer_id, place_in_line) "
+                "VALUES (?, ?, ?)", (item_id, customer_id, updatedSpot))
 
+    return updatedSpot
+
+
+"""
+Removes person at position 1 and shifts everyone else down by 1.
+"""
 def update_waitlist(item_id: str = None):
-    """
-    Removes person at position 1 and shifts everyone else down by 1.
-    """
-    raise NotImplementedError("you must implement this function")
+    # Delete Person 1
+    cur.execute("DELETE FROM waitlist "
+                "WHERE item_id = ? "
+                "AND place_in_line = 1", (item_id,))
+
+    # Shift Everyone Else Down 1
+    cur.execute("UPDATE waitlist "
+                "SET place_in_line = place_in_line - 1 "
+                "WHERE item_id = ?", (item_id,))
 
 
+"""
+Moves a rental from rental to rental_history with return_date = today.
+"""
 def return_item(item_id: str = None, customer_id: str = None):
-    """
-    Moves a rental from rental to rental_history with return_date = today.
-    """
-    raise NotImplementedError("you must implement this function")
+    # Gather
+    cur.execute("SELECT rental_date, due_date "
+                "FROM rental "
+                "WHERE item_id = ? "
+                "AND customer_id = ?", (item_id, customer_id))
+
+    entry = cur.fetchone()
+
+    # Check If Empty
+    if entry is None:
+        return
+    # Insert Entry Into History
+    cur.execute("INSERT INTO rental_history (item_id, customer_id, rental_date, due_date, return_date) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (item_id, customer_id, entry[0], entry[1], date.today()))
+
+    # Remove Entry From Rental
+    cur.execute("DELETE FROM rental "
+                "WHERE item_id = ? "
+                "AND customer_id = ?",
+                (item_id, customer_id))
 
 
+"""
+Adds 14 days to the due_date.
+"""
 def grant_extension(item_id: str = None, customer_id: str = None):
-    """
-    Adds 14 days to the due_date.
-    """
-    raise NotImplementedError("you must implement this function")
+    # Add 14 Days To Date
+    cur.execute("UPDATE rental "
+                "SET due_date = DATE_ADD(due_date, INTERVAL 14 DAY) "
+                "WHERE item_id = ? AND customer_id = ?",
+                (item_id, customer_id))
 
 
 def get_filtered_items(filter_attributes: Item = None,
@@ -126,37 +169,68 @@ def get_filtered_waitlist(filter_attributes: Waitlist = None,
     raise NotImplementedError("you must implement this function")
 
 
+"""
+Returns num_owned - active rentals. Returns -1 if item doesn't exist.
+"""
 def number_in_stock(item_id: str = None) -> int:
-    """
-    Returns num_owned - active rentals. Returns -1 if item doesn't exist.
-    """
-    raise NotImplementedError("you must implement this function")
+    # Get The Number Owned
+    cur.execute("SELECT i_num_owned "
+                "FROM item "
+                "WHERE i_item_id = ?", (item_id,))
+    entryOwned = cur.fetchone()
+
+    if entryOwned is None:
+        return -1
+
+    # Get Active Rentals
+    cur.execute("SELECT COUNT(*) "
+                "FROM rental "
+                "WHERE item_id = ?", (item_id,))
+    entryRental = cur.fetchone()[0]
+
+    return entryOwned[0] - entryRental
 
 
+"""
+Returns the customer's place_in_line, or -1 if not on waitlist.
+"""
 def place_in_line(item_id: str = None, customer_id: str = None) -> int:
-    """
-    Returns the customer's place_in_line, or -1 if not on waitlist.
-    """
-    raise NotImplementedError("you must implement this function")
+    # Get Customers Spot In Line
+    cur.execute("SELECT place_in_line "
+                "FROM waitlist "
+                "WHERE item_id = ? "
+                "AND customer_id = ?", (item_id, customer_id))
+    entry = cur.fetchone()
+
+    if entry is None:
+        return -1
+
+    return entry[0]
 
 
+"""
+Returns how many people are on the waitlist for this item.
+"""
 def line_length(item_id: str = None) -> int:
-    """
-    Returns how many people are on the waitlist for this item.
-    """
-    raise NotImplementedError("you must implement this function")
+    # Get Number Of People On Waitlist
+    cur.execute("SELECT COUNT(*) "
+                "FROM waitlist "
+                "WHERE item_id = ?", (item_id,))
+
+    return cur.fetchone()[0]
 
 
+"""
+Commits all changes made to the db.
+"""
 def save_changes():
-    """
-    Commits all changes made to the db.
-    """
-    raise NotImplementedError("you must implement this function")
+    # commit Reference https://dev.mysql.com/doc/connector-python/en/connector-python-api-mysqlconnection-commit.html
+    conn.commit()
 
 
+"""
+Closes the cursor and connection.
+"""
 def close_connection():
-    """
-    Closes the cursor and connection.
-    """
-    raise NotImplementedError("you must implement this function")
-
+    cur.close()
+    conn.close()
