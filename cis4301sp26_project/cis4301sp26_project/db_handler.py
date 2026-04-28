@@ -12,7 +12,7 @@ conn = connect(user=DB_CONFIG["username"], password=DB_CONFIG["password"], host=
 
 cur = conn.cursor()
 
-
+# Jai
 def add_item(new_item: Item = None):
     """
     new_item - An Item object containing a new item to be inserted into the DB in the item table.
@@ -40,7 +40,7 @@ def add_item(new_item: Item = None):
           new_item.brand, None, new_item.category, new_item.manufact,
           new_item.current_price, new_item.num_owned))
     
-
+# Jai
 def add_customer(new_customer: Customer = None):
     """
     new_customer - A Customer object containing a new customer to be inserted into the DB in the customer table.
@@ -63,6 +63,7 @@ def add_customer(new_customer: Customer = None):
     else:
         new_addr_sk = row[0] + 1
 
+    # Insert address into customer_address
     cur.execute("""
         INSERT INTO customer_address (ca_address_sk, ca_street_number, ca_street_name,
                                       ca_city, ca_state, ca_zip)
@@ -77,6 +78,7 @@ def add_customer(new_customer: Customer = None):
     else:
         my_cust_sk = row[0] + 1
 
+    # Insert new customer and link address
     cur.execute("""
         INSERT INTO customer (c_customer_sk, c_customer_id, c_first_name, c_last_name,
                               c_email_address, c_current_addr_sk)
@@ -85,7 +87,7 @@ def add_customer(new_customer: Customer = None):
     (my_cust_sk, new_customer.customer_id, first_name, last_name,
           new_customer.email, new_addr_sk))
 
-
+# Jai
 def edit_customer(original_customer_id: str = None, new_customer: Customer = None):
     """
     original_customer_id - A string containing the customer id for the customer to be edited.
@@ -133,7 +135,7 @@ def edit_customer(original_customer_id: str = None, new_customer: Customer = Non
                     """, 
         (new_customer.customer_id, original_customer_id))
 
-
+# Charan
 """
 item_id - A string containing the Item ID for the item being rented.
 customer_id - A string containing the customer id of the customer renting the item.
@@ -148,7 +150,7 @@ def rent_item(item_id: str = None, customer_id: str = None):
     cur.execute("INSERT INTO rental (item_id, customer_id, rental_date, due_date) "
                 "VALUES (?, ?, ?, ?)", (item_id, customer_id, todaysDate, dateDue))
 
-
+# Charan
 """
 Returns the customer's new place in line.
 """
@@ -160,7 +162,7 @@ def waitlist_customer(item_id: str = None, customer_id: str = None) -> int:
 
     return updatedSpot
 
-
+# Charan
 """
 Removes person at position 1 and shifts everyone else down by 1.
 """
@@ -175,7 +177,7 @@ def update_waitlist(item_id: str = None):
                 "SET place_in_line = place_in_line - 1 "
                 "WHERE item_id = ?", (item_id,))
 
-
+# Charan
 """
 Moves a rental from rental to rental_history with return_date = today.
 """
@@ -202,18 +204,18 @@ def return_item(item_id: str = None, customer_id: str = None):
                 "AND customer_id = ?",
                 (item_id, customer_id))
 
-
+# Charan
 """
 Adds 14 days to the due_date.
 """
 def grant_extension(item_id: str = None, customer_id: str = None):
-    # Add 14 Days To Date
+    # Add 14 Days To Due Date
     cur.execute("UPDATE rental "
                 "SET due_date = DATE_ADD(due_date, INTERVAL 14 DAY) "
                 "WHERE item_id = ? AND customer_id = ?",
                 (item_id, customer_id))
 
-
+# Jai
 def get_filtered_items(filter_attributes: Item = None,
                        use_patterns: bool = False,
                        min_price: float = -1,
@@ -290,6 +292,7 @@ def get_filtered_items(filter_attributes: Item = None,
         answers.append(item)
     return answers
 
+# Jai
 def get_filtered_customers(filter_attributes: Customer = None, use_patterns: bool = False) -> list[Customer]:
     """
     Returns a list of Customer objects matching the filters.
@@ -345,7 +348,7 @@ def get_filtered_customers(filter_attributes: Customer = None, use_patterns: boo
         answers.append(customer)
     return answers
 
-
+# Jai
 def get_filtered_rentals(filter_attributes: Rental = None,
                          min_rental_date: str = None,
                          max_rental_date: str = None,
@@ -393,7 +396,7 @@ def get_filtered_rentals(filter_attributes: Rental = None,
         answers.append(rental)
     return answers
 
-
+# Jai
 def get_filtered_rental_histories(filter_attributes: RentalHistory = None,
                                   min_rental_date: str = None,
                                   max_rental_date: str = None,
@@ -454,7 +457,7 @@ def get_filtered_rental_histories(filter_attributes: RentalHistory = None,
         answers.append(rentalHistory)
     return answers
 
-
+# Jai
 def get_filtered_waitlist(filter_attributes: Waitlist = None,
                           min_place_in_line: int = -1,
                           max_place_in_line: int = -1) -> list[Waitlist]:
@@ -492,7 +495,7 @@ def get_filtered_waitlist(filter_attributes: Waitlist = None,
         answers.append(waitList)
     return answers
 
-
+# Charan
 """
 Returns num_owned - active rentals. Returns -1 if item doesn't exist.
 """
@@ -514,7 +517,7 @@ def number_in_stock(item_id: str = None) -> int:
 
     return entryOwned[0] - entryRental
 
-
+# Charan
 """
 Returns the customer's place_in_line, or -1 if not on waitlist.
 """
@@ -531,7 +534,7 @@ def place_in_line(item_id: str = None, customer_id: str = None) -> int:
 
     return entry[0]
 
-
+# Charan
 """
 Returns how many peoperle are on the waitlist for this item.
 """
@@ -543,7 +546,7 @@ def line_length(item_id: str = None) -> int:
 
     return cur.fetchone()[0]
 
-
+# Charan
 """
 Commits all changes made to the db.
 """
@@ -551,7 +554,7 @@ def save_changes():
     # commit Reference https://dev.mysql.com/doc/connector-python/en/connector-python-api-mysqlconnection-commit.html
     conn.commit()
 
-
+# Charan
 """
 Closes the cursor and connection.
 """
