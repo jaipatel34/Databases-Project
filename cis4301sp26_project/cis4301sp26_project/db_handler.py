@@ -313,14 +313,23 @@ def get_filtered_customers(filter_attributes: Customer = None, use_patterns: boo
         if filter_attributes.customer_id is not None:
             query+= " AND c.c_customer_id " + oper + " ?"
             res.append(filter_attributes.customer_id)
+        """
+        # query += " AND c.c_first_name " + oper + " ?"
+        Changed To Following Because Didn't Pass Some Tests. Did Not Check Full Name
+        """
         if filter_attributes.name is not None:
-            query += " AND c.c_first_name " + oper + " ?"
+            # DO NOT REMOVE TRIM
+            query += " AND CONCAT(TRIM(c.c_first_name), ' ', TRIM(c.c_last_name)) " + oper + " ?"
             res.append(filter_attributes.name)
         if filter_attributes.email is not None:
             query+= " AND c.c_email_address " + oper + " ?"
             res.append(filter_attributes.email)
+        """
+        Same As Previous, Does Not Check Full Address, So I Modified.
+        """
         if filter_attributes.address is not None:
-            query += " AND ca.ca_street_name " + oper + " ?"
+            # DO NOT REMOVE TRIM
+            query += """ AND CONCAT(TRIM(ca.ca_street_number), ' ', TRIM(ca.ca_street_name), ', ', TRIM(ca.ca_city), ', ', TRIM(ca.ca_state), ' ', TRIM(ca.ca_zip)) """ + oper + " ?"
             res.append(filter_attributes.address)
 
     cur.execute(query, res)
